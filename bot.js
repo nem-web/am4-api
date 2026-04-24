@@ -11,7 +11,7 @@ const co2Threshold = 115;
 const maxAmount = 2000000;
 const BOOST_INTERVAL = 60 * 60 * 1000;
 
-// ===== MEMORY (TEMP - resets on restart) =====
+// ===== MEMORY =====
 let memory = {};
 
 // ===== TELEGRAM =====
@@ -31,7 +31,7 @@ function formatTime(sec) {
 
 // ===== FETCH CASH =====
 async function getCash(page) {
-    await page.goto("https://airlinemanager.com/banking.php");
+    await page.goto("https://airlinemanager.com/banking.php", { waitUntil: "domcontentloaded" });
     return await page.evaluate(() => {
         const m = document.body.innerText.match(/\$\s?([\d,]+)/);
         return m ? parseInt(m[1].replace(/,/g, "")) : 0;
@@ -72,7 +72,14 @@ export default async function runBot() {
 
     const browser = await puppeteer.launch({
         headless: true,
-        args: ["--no-sandbox", "--disable-setuid-sandbox"]
+        executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
+        args: [
+            "--no-sandbox",
+            "--disable-setuid-sandbox",
+            "--disable-dev-shm-usage",
+            "--disable-gpu"
+        ],
+        timeout: 60000
     });
 
     const page = await browser.newPage();
@@ -80,10 +87,10 @@ export default async function runBot() {
 
     try {
 
-        await page.goto(LOGIN_URL, { waitUntil: "networkidle2" });
+        await page.goto(LOGIN_URL, { waitUntil: "networkidle2", timeout: 60000 });
 
         // ✈️ DEPART
-        await page.goto("https://airlinemanager.com/routes_main.php");
+        await page.goto("https://airlinemanager.com/routes_main.php", { waitUntil: "domcontentloaded" });
 
         const ids = await page.evaluate(() =>
             [...document.querySelectorAll("[id^=routeMainList]")]
@@ -128,7 +135,6 @@ export default async function runBot() {
         });
 
         if (fuelPrice !== null) {
-
             if (memory.lastFuel !== fuelPrice) {
                 await sendTelegram(`⛽ Fuel Price: $${fuelPrice}/1000`);
                 memory.lastFuel = fuelPrice;
@@ -136,7 +142,6 @@ export default async function runBot() {
 
             if (fuelPrice <= fuelThreshold) {
                 let success = await buy(page, "fuel", fuelPrice, maxAmount);
-
                 if (!success) {
                     await sendTelegram("⚠️ Fuel retry...");
                     await buy(page, "fuel", fuelPrice, maxAmount);
@@ -153,7 +158,6 @@ export default async function runBot() {
         });
 
         if (co2Price !== null) {
-
             if (memory.lastCO2 !== co2Price) {
                 await sendTelegram(`🌱 CO2 Price: $${co2Price}/1000`);
                 memory.lastCO2 = co2Price;
@@ -161,7 +165,6 @@ export default async function runBot() {
 
             if (co2Price <= co2Threshold) {
                 let success = await buy(page, "co2", co2Price, maxAmount);
-
                 if (!success) {
                     await sendTelegram("⚠️ CO2 retry...");
                     await buy(page, "co2", co2Price, maxAmount);
@@ -173,7 +176,6 @@ export default async function runBot() {
         await page.goto("https://airlinemanager.com/marketing.php");
 
         const marketing = await page.evaluate(() => {
-
             const stars = document.querySelectorAll(".stars");
 
             const airlineRep = parseInt(stars[0]?.innerText || 0);
@@ -207,7 +209,6 @@ export default async function runBot() {
             (now - memory.lastBoostReport > BOOST_INTERVAL);
 
         if (shouldSendBoost) {
-
             let msg = `📊 AM4 BOOST REPORT\n\n`;
 
             msg += `✈️ Airline Rep: ${marketing.airlineRep}%\n`;
@@ -226,11 +227,9 @@ export default async function runBot() {
             }
 
             await sendTelegram(msg);
-
             memory.lastBoostReport = now;
         }
 
-        // SAVE MEMORY
         memory.cash = cash;
         memory.time = now;
 
