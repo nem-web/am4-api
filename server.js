@@ -4,6 +4,7 @@ import runBot from "./bot.js";
 const app = express();
 
 app.get("/run", async (req, res) => {
+
     if (req.query.key !== process.env.SECRET_KEY) {
         return res.status(401).send("Unauthorized");
     }
@@ -16,4 +17,4 @@ app.get("/run", async (req, res) => {
     }
 });
 
-app.listen(3000, () => console.log("Server running"));
+app.listen(3000, () => console.log("Server running on port 3000"));
