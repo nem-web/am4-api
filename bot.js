@@ -71,15 +71,16 @@ Total: $${total}`
 export default async function runBot() {
 
     const browser = await puppeteer.launch({
-        headless: true,
-        executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
-        args: [
-            "--no-sandbox",
-            "--disable-setuid-sandbox",
-            "--disable-dev-shm-usage",
-            "--disable-gpu"
-        ],
-        timeout: 60000
+      headless: true,
+      // Use Render’s system Chromium path (works on most Linux images)
+      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || "/usr/bin/chromium-browser",
+      args: [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+        "--disable-gpu"
+      ],
+      timeout: 60000
     });
 
     const page = await browser.newPage();
