@@ -1,4 +1,5 @@
-import puppeteer from "puppeteer";
+import puppeteer from "puppeteer-core";
+import chromium from "@sparticuz/chromium";
 
 // ===== CONFIG =====
 const LOGIN_URL = process.env.LOGIN_URL;
@@ -71,16 +72,10 @@ Total: $${total}`
 export default async function runBot() {
 
     const browser = await puppeteer.launch({
-      headless: true,
-      // Use Render’s system Chromium path (works on most Linux images)
-      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || "/usr/bin/chromium-browser",
-      args: [
-        "--no-sandbox",
-        "--disable-setuid-sandbox",
-        "--disable-dev-shm-usage",
-        "--disable-gpu"
-      ],
-      timeout: 60000
+      args: chromium.args,
+      defaultViewport: chromium.defaultViewport,
+      executablePath: await chromium.executablePath(),
+      headless: chromium.headless
     });
 
     const page = await browser.newPage();
