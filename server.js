@@ -3,6 +3,10 @@ import runBot from "./bot.js";
 
 const app = express();
 
+app.get("/", (req, res) => {
+    res.send("AM4 Bot API Running ✅");
+});
+
 app.get("/run", async (req, res) => {
 
     if (req.query.key !== process.env.SECRET_KEY) {
@@ -13,8 +17,10 @@ app.get("/run", async (req, res) => {
         await runBot();
         res.send("✅ Bot executed");
     } catch (err) {
+        console.error(err);
         res.status(500).send(err.message);
     }
 });
 
-app.listen(3000, () => console.log("Server running on port 3000"));
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
